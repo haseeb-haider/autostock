@@ -55,3 +55,4 @@ AUTO_SEND_PO = _bool("AUTO_SEND_PO", False)
 # Run APScheduler inside the web process. Off by default; use the GitHub Action instead.
 ENABLE_SCHEDULER = _bool("ENABLE_SCHEDULER", False)
 BUSINESS_NAME = os.environ.get("BUSINESS_NAME", "AutoStock")
+CURRENCY_SYMBOL = os.environ.get("CURRENCY_SYMBOL", "$")

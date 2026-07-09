@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Products &amp; recipes</h1>
+<div class="page-head"><h1>Products &amp; recipes</h1></div>
 
 <div class="grid2">
   <div class="card">
@@ -32,16 +32,18 @@
 
 {% for p in products %}
 <div class="card">
-  <h3>{{ p.name }} <span class="muted">- {{ "%.2f"|format(p.retail_price) }}</span></h3>
+  <h3>{{ p.name }} <span class="muted">&middot; {{ currency }}{{ "%.2f"|format(p.retail_price) }}</span></h3>
   {% if p.recipe_items %}
+  <div class="table-wrap">
   <table>
-    <thead><tr><th>Ingredient</th><th>Qty per unit</th></tr></thead>
+    <thead><tr><th>Ingredient</th><th class="num">Qty per unit</th></tr></thead>
     <tbody>
       {% for r in p.recipe_items %}
-      <tr><td>{{ r.ingredient.name if r.ingredient else r.ingredient_id }}</td><td>{{ r.qty_per_unit }}</td></tr>
+      <tr><td>{{ r.ingredient.name if r.ingredient else r.ingredient_id }}</td><td class="num">{{ r.qty_per_unit }}</td></tr>
       {% endfor %}
     </tbody>
   </table>
+  </div>
   {% else %}<p class="muted">No recipe yet.</p>{% endif %}
 </div>
 {% endfor %}

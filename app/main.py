@@ -1,11 +1,10 @@
 """AutoStock web application."""
-import csv
 import io
 import secrets
 from datetime import date, datetime
 
-from fastapi import Depends, FastAPI, Form, HTTPException, Request, UploadFile
-from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse
+from fastapi import Depends, FastAPI, Form, HTTPException, Request
+from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse, StreamingResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -14,6 +13,7 @@ from sqlalchemy.orm import Session
 from . import config
 from .automation import build_reorder_plan, run_daily
 from .database import get_db, init_db
+from .export import build_workbook
 from .inventory import kpis, snapshot
 from .models import Ingredient, Product, Purchase, RecipeItem, Sale, Supplier
 from .scheduler import start_scheduler
@@ -21,6 +21,7 @@ from .scheduler import start_scheduler
 app = FastAPI(title="AutoStock")
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
+templates.env.globals["currency"] = config.CURRENCY_SYMBOL
 _basic = HTTPBasic(auto_error=False)
 
 
@@ -177,27 +178,20 @@ def mark_delivered(purchase_id: int, db: Session = Depends(get_db), _=Depends(gu
     return RedirectResponse("/log", status_code=303)
 
 
-@app.post("/import/sales")
-async def import_sales(file: UploadFile, db: Session = Depends(get_db), _=Depends(guard)):
-    """CSV columns: product_id or product_name, qty, [unit_price], [sale_date]."""
-    raw = (await file.read()).decode("utf-8", errors="ignore")
-    products = {p.name.lower(): p for p in db.query(Product).all()}
-    by_id = {p.id: p for p in db.query(Product).all()}
-    count = 0
-    for r in csv.DictReader(io.StringIO(raw)):
-        prod = None
-        if r.get("product_id"):
-            prod = by_id.get(int(r["product_id"]))
-        elif r.get("product_name"):
-            prod = products.get(r["product_name"].strip().lower())
-        if not prod:
-            continue
-        d = date.fromisoformat(r["sale_date"]) if r.get("sale_date") else date.today()
-        db.add(Sale(product_id=prod.id, qty=float(r.get("qty", 0)),
-                    unit_price=float(r.get("unit_price") or prod.retail_price), sale_date=d))
-        count += 1
-    db.commit()
-    return RedirectResponse("/log", status_code=303)
+# --- Export -----------------------------------------------------------------
+@app.get("/export.xlsx")
+def export_xlsx(db: Session = Depends(get_db), _=Depends(guard)):
+    """Download the current inventory, products, suppliers, purchases, and sales as an Excel workbook."""
+    wb = build_workbook(db)
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    filename = f"{config.BUSINESS_NAME.replace(' ', '_')}_export_{date.today().isoformat()}.xlsx"
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 # --- Automation + integration endpoints (token protected) -----------------

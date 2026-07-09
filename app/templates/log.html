@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Log sale / delivery</h1>
-<p class="muted">This is the only routine data entry. Everything else recalculates from here.</p>
+<div class="page-head"><h1>Log sale / delivery</h1></div>
+<p class="lede">This is the only routine data entry. Everything else recalculates from here.</p>
 
 <div class="grid2">
   <div class="card">
@@ -43,29 +43,22 @@
   </div>
 </div>
 
-<div class="card">
-  <h2>Import sales (CSV)</h2>
-  <p class="muted">Columns: <code>product_name</code> (or <code>product_id</code>), <code>qty</code>, optional <code>unit_price</code>, <code>sale_date</code>.</p>
-  <form method="post" action="/import/sales" enctype="multipart/form-data">
-    <input type="file" name="file" accept=".csv" required>
-    <button type="submit">Upload</button>
-  </form>
-</div>
-
 <h2>Pending deliveries</h2>
 {% if pending %}
+<div class="table-wrap">
 <table>
-  <thead><tr><th>Ingredient</th><th>Qty</th><th>Ordered</th><th></th></tr></thead>
+  <thead><tr><th>Ingredient</th><th class="num">Qty</th><th>Ordered</th><th></th></tr></thead>
   <tbody>
     {% for p in pending %}
     <tr>
       <td>{{ p.ingredient.name if p.ingredient else p.ingredient_id }}</td>
-      <td>{{ p.qty }}</td>
+      <td class="num">{{ p.qty }}</td>
       <td>{{ p.order_date }}</td>
-      <td><form method="post" action="/purchases/{{ p.id }}/deliver"><button class="small">Mark delivered</button></form></td>
+      <td><form method="post" action="/purchases/{{ p.id }}/deliver"><button class="small ghost">Mark delivered</button></form></td>
     </tr>
     {% endfor %}
   </tbody>
 </table>
+</div>
 {% else %}<p class="muted">No pending orders.</p>{% endif %}
 {% endblock %}

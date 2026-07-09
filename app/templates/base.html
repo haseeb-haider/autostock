@@ -3,18 +3,36 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ business }}</title>
+  <title>{{ business }} · AutoStock</title>
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
   <aside class="sidebar">
-    <div class="brand">{{ business }}</div>
+    <div class="brand">
+      <div class="brand-mark">{{ business[0]|upper if business else "A" }}</div>
+      <div class="brand-name">{{ business }}</div>
+    </div>
     <nav>
-      <a href="/">Dashboard</a>
-      <a href="/log">Log sale / delivery</a>
-      <a href="/products">Products &amp; recipes</a>
-      <a href="/ingredients">Ingredients</a>
-      <a href="/suppliers">Suppliers</a>
+      <a href="/" class="{{ 'active' if request.url.path == '/' else '' }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+        Dashboard
+      </a>
+      <a href="/log" class="{{ 'active' if request.url.path == '/log' else '' }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        Log sale / delivery
+      </a>
+      <a href="/products" class="{{ 'active' if request.url.path == '/products' else '' }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7L12 3 4 7m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+        Products &amp; recipes
+      </a>
+      <a href="/ingredients" class="{{ 'active' if request.url.path == '/ingredients' else '' }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v4H4zm2 4v12h12V8M10 12h4"/></svg>
+        Ingredients
+      </a>
+      <a href="/suppliers" class="{{ 'active' if request.url.path == '/suppliers' else '' }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10l1.5-5h15L21 10M3 10v10h18V10M3 10h18M9 15h6"/></svg>
+        Suppliers
+      </a>
     </nav>
     <div class="sidebar-foot">Stock is calculated, never typed.</div>
   </aside>

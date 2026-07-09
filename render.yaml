@@ -12,6 +12,8 @@ services:
         generateValue: true  # Render generates a strong token for /tasks endpoints
       - key: BUSINESS_NAME
         value: AutoStock
+      - key: CURRENCY_SYMBOL
+        value: "$"
       - key: WINDOW_DAYS
         value: "30"
       - key: DEFAULT_LEAD_DAYS

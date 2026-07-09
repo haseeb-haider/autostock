@@ -75,6 +75,7 @@ See `.env.example`. Key ones:
 ## Endpoints
 
 - `GET /` dashboard · `GET /log` quick entry · `/products` `/ingredients` `/suppliers`
+- `GET /export.xlsx` download ingredients, products & recipes, suppliers, purchases, and sales as an Excel workbook
 - `POST /tasks/run-daily?token=...` run automation (called by the cron)
 - `GET /tasks/preview?token=...` plain-text preview of the drafted POs
 - `POST /api/sale?token=...` record a sale from a POS/webhook

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Suppliers</h1>
+<div class="page-head"><h1>Suppliers</h1></div>
 
 <div class="card">
   <h2>Add supplier</h2>
@@ -12,6 +12,7 @@
   </form>
 </div>
 
+<div class="table-wrap">
 <table>
   <thead><tr><th>Name</th><th>Email</th><th>Lead time</th></tr></thead>
   <tbody>
@@ -20,4 +21,5 @@
     {% endfor %}
   </tbody>
 </table>
+</div>
 {% endblock %}

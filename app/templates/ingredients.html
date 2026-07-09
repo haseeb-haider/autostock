@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Ingredients</h1>
+<div class="page-head"><h1>Ingredients</h1></div>
 
 <div class="card">
   <h2>Add ingredient</h2>
@@ -17,20 +17,22 @@
     <label>Manual reorder level <input type="number" step="any" name="manual_reorder_level" value="0"></label>
     <button type="submit">Add</button>
   </form>
-  <p class="muted">Leave manual reorder level at 0 to let the system set it dynamically from sales velocity.</p>
+  <p class="muted" style="margin-top: 10px;">Leave manual reorder level at 0 to let the system set it dynamically from sales velocity.</p>
 </div>
 
+<div class="table-wrap">
 <table>
-  <thead><tr><th>Name</th><th>Unit</th><th>Cost/unit</th><th>Supplier</th><th>Manual reorder</th></tr></thead>
+  <thead><tr><th>Name</th><th>Unit</th><th class="num">Cost/unit</th><th>Supplier</th><th>Manual reorder</th></tr></thead>
   <tbody>
     {% for i in ingredients %}
     <tr>
       <td>{{ i.name }}</td><td>{{ i.unit }}</td>
-      <td>{{ "%.2f"|format(i.cost_per_unit) }}</td>
+      <td class="num">{{ currency }}{{ "%.2f"|format(i.cost_per_unit) }}</td>
       <td>{{ i.supplier.name if i.supplier else "-" }}</td>
       <td>{{ i.manual_reorder_level or "auto" }}</td>
     </tr>
     {% endfor %}
   </tbody>
 </table>
+</div>
 {% endblock %}

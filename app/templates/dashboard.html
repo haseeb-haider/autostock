@@ -1,52 +1,87 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Dashboard</h1>
+<div class="page-head">
+  <h1>Dashboard</h1>
+  <a class="btn" href="/export.xlsx">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
+    Export data (.xlsx)
+  </a>
+</div>
 
 <section class="kpis">
-  <div class="kpi"><span class="kpi-num">{{ kpis.ingredient_count }}</span><span class="kpi-label">Ingredients</span></div>
-  <div class="kpi"><span class="kpi-num">{{ "%.2f"|format(kpis.total_value) }}</span><span class="kpi-label">Stock value</span></div>
-  <div class="kpi warn"><span class="kpi-num">{{ kpis.reorder_count }}</span><span class="kpi-label">Need reorder</span></div>
-  <div class="kpi danger"><span class="kpi-num">{{ kpis.out_count }}</span><span class="kpi-label">Out of stock</span></div>
+  <div class="kpi">
+    <div class="kpi-top">
+      <span class="kpi-label">Ingredients</span>
+      <span class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v4H4zm2 4v12h12V8M10 12h4"/></svg></span>
+    </div>
+    <span class="kpi-num">{{ kpis.ingredient_count }}</span>
+  </div>
+  <div class="kpi">
+    <div class="kpi-top">
+      <span class="kpi-label">Stock value</span>
+      <span class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></span>
+    </div>
+    <span class="kpi-num">{{ currency }}{{ "%.2f"|format(kpis.total_value) }}</span>
+  </div>
+  <div class="kpi warn">
+    <div class="kpi-top">
+      <span class="kpi-label">Need reorder</span>
+      <span class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg></span>
+    </div>
+    <span class="kpi-num">{{ kpis.reorder_count }}</span>
+  </div>
+  <div class="kpi danger">
+    <div class="kpi-top">
+      <span class="kpi-label">Out of stock</span>
+      <span class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6m0-6l6 6"/></svg></span>
+    </div>
+    <span class="kpi-num">{{ kpis.out_count }}</span>
+  </div>
 </section>
 
 {% if suggestions %}
 <h2>Suggested purchase orders</h2>
+<div class="table-wrap">
 <table>
-  <thead><tr><th>Ingredient</th><th>Supplier</th><th>Order qty</th><th>Unit cost</th><th>Line cost</th></tr></thead>
+  <thead><tr><th>Ingredient</th><th>Supplier</th><th>Order qty</th><th class="num">Unit cost</th><th class="num">Line cost</th></tr></thead>
   <tbody>
     {% for s in suggestions %}
     <tr>
       <td>{{ s.name }}</td><td>{{ s.supplier }}</td>
       <td>{{ s.qty }} {{ s.unit }}</td>
-      <td>{{ "%.2f"|format(s.unit_cost) }}</td>
-      <td>{{ "%.2f"|format(s.line_cost) }}</td>
+      <td class="num">{{ currency }}{{ "%.2f"|format(s.unit_cost) }}</td>
+      <td class="num">{{ currency }}{{ "%.2f"|format(s.line_cost) }}</td>
     </tr>
     {% endfor %}
   </tbody>
 </table>
+</div>
 {% else %}
+<h2>Suggested purchase orders</h2>
 <p class="muted">No reorders needed right now.</p>
 {% endif %}
 
 <h2>Live stock</h2>
+<div class="table-wrap">
 <table>
   <thead>
-    <tr><th>Ingredient</th><th>Supplier</th><th>Stock</th><th>Daily use</th>
-      <th>Days left</th><th>Reorder at</th><th>Value</th><th>Status</th></tr>
+    <tr><th>Ingredient</th><th>Supplier</th><th class="num">Stock</th><th class="num">Daily use</th>
+      <th class="num">Days left</th><th class="num">Reorder at</th><th class="num">Value</th><th>Status</th></tr>
   </thead>
   <tbody>
     {% for r in rows %}
     <tr>
       <td>{{ r.name }}</td>
       <td>{{ r.supplier }}</td>
-      <td>{{ r.stock }} {{ r.unit }}</td>
-      <td>{{ r.daily_rate }}</td>
-      <td>{{ r.days_left if r.days_left is not none else "-" }}</td>
-      <td>{{ r.reorder_point }}</td>
-      <td>{{ "%.2f"|format(r.value) }}</td>
+      <td class="num">{{ r.stock }} {{ r.unit }}</td>
+      <td class="num">{{ r.daily_rate }}</td>
+      <td class="num">{{ r.days_left if r.days_left is not none else "-" }}</td>
+      <td class="num">{{ r.reorder_point }}</td>
+      <td class="num">{{ currency }}{{ "%.2f"|format(r.value) }}</td>
       <td><span class="badge {{ r.status }}">{{ r.status }}</span></td>
     </tr>
     {% endfor %}
   </tbody>
 </table>
+</div>
 {% endblock %}
