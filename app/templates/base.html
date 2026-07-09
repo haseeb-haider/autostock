@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ business }}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand">{{ business }}</div>
+    <nav>
+      <a href="/">Dashboard</a>
+      <a href="/log">Log sale / delivery</a>
+      <a href="/products">Products &amp; recipes</a>
+      <a href="/ingredients">Ingredients</a>
+      <a href="/suppliers">Suppliers</a>
+    </nav>
+    <div class="sidebar-foot">Stock is calculated, never typed.</div>
+  </aside>
+  <main class="content">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

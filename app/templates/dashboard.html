@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Dashboard</h1>
+
+<section class="kpis">
+  <div class="kpi"><span class="kpi-num">{{ kpis.ingredient_count }}</span><span class="kpi-label">Ingredients</span></div>
+  <div class="kpi"><span class="kpi-num">{{ "%.2f"|format(kpis.total_value) }}</span><span class="kpi-label">Stock value</span></div>
+  <div class="kpi warn"><span class="kpi-num">{{ kpis.reorder_count }}</span><span class="kpi-label">Need reorder</span></div>
+  <div class="kpi danger"><span class="kpi-num">{{ kpis.out_count }}</span><span class="kpi-label">Out of stock</span></div>
+</section>
+
+{% if suggestions %}
+<h2>Suggested purchase orders</h2>
+<table>
+  <thead><tr><th>Ingredient</th><th>Supplier</th><th>Order qty</th><th>Unit cost</th><th>Line cost</th></tr></thead>
+  <tbody>
+    {% for s in suggestions %}
+    <tr>
+      <td>{{ s.name }}</td><td>{{ s.supplier }}</td>
+      <td>{{ s.qty }} {{ s.unit }}</td>
+      <td>{{ "%.2f"|format(s.unit_cost) }}</td>
+      <td>{{ "%.2f"|format(s.line_cost) }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="muted">No reorders needed right now.</p>
+{% endif %}
+
+<h2>Live stock</h2>
+<table>
+  <thead>
+    <tr><th>Ingredient</th><th>Supplier</th><th>Stock</th><th>Daily use</th>
+      <th>Days left</th><th>Reorder at</th><th>Value</th><th>Status</th></tr>
+  </thead>
+  <tbody>
+    {% for r in rows %}
+    <tr>
+      <td>{{ r.name }}</td>
+      <td>{{ r.supplier }}</td>
+      <td>{{ r.stock }} {{ r.unit }}</td>
+      <td>{{ r.daily_rate }}</td>
+      <td>{{ r.days_left if r.days_left is not none else "-" }}</td>
+      <td>{{ r.reorder_point }}</td>
+      <td>{{ "%.2f"|format(r.value) }}</td>
+      <td><span class="badge {{ r.status }}">{{ r.status }}</span></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

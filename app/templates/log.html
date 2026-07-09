@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Log sale / delivery</h1>
+<p class="muted">This is the only routine data entry. Everything else recalculates from here.</p>
+
+<div class="grid2">
+  <div class="card">
+    <h2>Record a sale</h2>
+    <form method="post" action="/sales">
+      <label>Product
+        <select name="product_id" required>
+          {% for p in products %}<option value="{{ p.id }}">{{ p.name }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Quantity <input type="number" step="any" name="qty" required></label>
+      <label>Unit price <input type="number" step="any" name="unit_price" value="0"></label>
+      <label>Date <input type="date" name="sale_date"></label>
+      <button type="submit">Record sale</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Log a purchase</h2>
+    <form method="post" action="/purchases">
+      <label>Ingredient
+        <select name="ingredient_id" required>
+          {% for i in ingredients %}<option value="{{ i.id }}">{{ i.name }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Supplier
+        <select name="supplier_id">
+          <option value="">-</option>
+          {% for s in suppliers %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Quantity <input type="number" step="any" name="qty" required></label>
+      <label>Unit cost <input type="number" step="any" name="unit_cost" value="0"></label>
+      <label>Status
+        <select name="status"><option value="ordered">ordered</option><option value="delivered">delivered</option></select>
+      </label>
+      <button type="submit">Log purchase</button>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Import sales (CSV)</h2>
+  <p class="muted">Columns: <code>product_name</code> (or <code>product_id</code>), <code>qty</code>, optional <code>unit_price</code>, <code>sale_date</code>.</p>
+  <form method="post" action="/import/sales" enctype="multipart/form-data">
+    <input type="file" name="file" accept=".csv" required>
+    <button type="submit">Upload</button>
+  </form>
+</div>
+
+<h2>Pending deliveries</h2>
+{% if pending %}
+<table>
+  <thead><tr><th>Ingredient</th><th>Qty</th><th>Ordered</th><th></th></tr></thead>
+  <tbody>
+    {% for p in pending %}
+    <tr>
+      <td>{{ p.ingredient.name if p.ingredient else p.ingredient_id }}</td>
+      <td>{{ p.qty }}</td>
+      <td>{{ p.order_date }}</td>
+      <td><form method="post" action="/purchases/{{ p.id }}/deliver"><button class="small">Mark delivered</button></form></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}<p class="muted">No pending orders.</p>{% endif %}
+{% endblock %}

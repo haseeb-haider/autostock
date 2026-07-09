@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Ingredients</h1>
+
+<div class="card">
+  <h2>Add ingredient</h2>
+  <form method="post" action="/ingredients" class="row-form">
+    <label>Name <input name="name" required></label>
+    <label>Unit <input name="unit" value="unit"></label>
+    <label>Cost / unit <input type="number" step="any" name="cost_per_unit" value="0"></label>
+    <label>Supplier
+      <select name="supplier_id">
+        <option value="">-</option>
+        {% for s in suppliers %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Manual reorder level <input type="number" step="any" name="manual_reorder_level" value="0"></label>
+    <button type="submit">Add</button>
+  </form>
+  <p class="muted">Leave manual reorder level at 0 to let the system set it dynamically from sales velocity.</p>
+</div>
+
+<table>
+  <thead><tr><th>Name</th><th>Unit</th><th>Cost/unit</th><th>Supplier</th><th>Manual reorder</th></tr></thead>
+  <tbody>
+    {% for i in ingredients %}
+    <tr>
+      <td>{{ i.name }}</td><td>{{ i.unit }}</td>
+      <td>{{ "%.2f"|format(i.cost_per_unit) }}</td>
+      <td>{{ i.supplier.name if i.supplier else "-" }}</td>
+      <td>{{ i.manual_reorder_level or "auto" }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

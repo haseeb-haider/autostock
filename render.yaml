@@ -1,0 +1,37 @@
+services:
+  - type: web
+    name: autostock
+    runtime: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: DATABASE_URL
+        sync: false          # paste your Neon connection string in the dashboard
+      - key: ADMIN_TOKEN
+        generateValue: true  # Render generates a strong token for /tasks endpoints
+      - key: BUSINESS_NAME
+        value: AutoStock
+      - key: WINDOW_DAYS
+        value: "30"
+      - key: DEFAULT_LEAD_DAYS
+        value: "7"
+      - key: SAFETY_DAYS
+        value: "3"
+      - key: COVER_DAYS
+        value: "30"
+      # Set these to enable email digests / auto POs:
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: ALERT_EMAIL
+        sync: false
+      - key: AUTO_CREATE_PO
+        value: "false"
+      - key: AUTO_SEND_PO
+        value: "false"

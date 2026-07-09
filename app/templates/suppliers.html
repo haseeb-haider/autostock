@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Suppliers</h1>
+
+<div class="card">
+  <h2>Add supplier</h2>
+  <form method="post" action="/suppliers" class="row-form">
+    <label>Name <input name="name" required></label>
+    <label>Email <input type="email" name="email"></label>
+    <label>Lead time (days) <input type="number" name="lead_time_days" value="7"></label>
+    <button type="submit">Add</button>
+  </form>
+</div>
+
+<table>
+  <thead><tr><th>Name</th><th>Email</th><th>Lead time</th></tr></thead>
+  <tbody>
+    {% for s in suppliers %}
+    <tr><td>{{ s.name }}</td><td>{{ s.email or "-" }}</td><td>{{ s.lead_time_days }} days</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

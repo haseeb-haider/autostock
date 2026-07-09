@@ -1,0 +1,18 @@
+name: Daily reorder run
+
+# Runs every day at 06:00 UTC. This both wakes the free Render service
+# and triggers reorder detection + notifications.
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch: {}   # lets you run it manually from the Actions tab
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call run-daily endpoint
+        run: |
+          curl -fsS -X POST \
+            "${{ secrets.APP_URL }}/tasks/run-daily?token=${{ secrets.ADMIN_TOKEN }}" \
+            || (echo "Request failed" && exit 1)

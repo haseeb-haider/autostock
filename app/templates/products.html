@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Products &amp; recipes</h1>
+
+<div class="grid2">
+  <div class="card">
+    <h2>Add product</h2>
+    <form method="post" action="/products">
+      <label>Name <input name="name" required></label>
+      <label>Retail price <input type="number" step="any" name="retail_price" value="0"></label>
+      <button type="submit">Add product</button>
+    </form>
+  </div>
+  <div class="card">
+    <h2>Add recipe line</h2>
+    <form method="post" action="/recipe">
+      <label>Product
+        <select name="product_id" required>
+          {% for p in products %}<option value="{{ p.id }}">{{ p.name }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Ingredient
+        <select name="ingredient_id" required>
+          {% for i in ingredients %}<option value="{{ i.id }}">{{ i.name }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Qty per unit sold <input type="number" step="any" name="qty_per_unit" required></label>
+      <button type="submit">Add to recipe</button>
+    </form>
+  </div>
+</div>
+
+{% for p in products %}
+<div class="card">
+  <h3>{{ p.name }} <span class="muted">- {{ "%.2f"|format(p.retail_price) }}</span></h3>
+  {% if p.recipe_items %}
+  <table>
+    <thead><tr><th>Ingredient</th><th>Qty per unit</th></tr></thead>
+    <tbody>
+      {% for r in p.recipe_items %}
+      <tr><td>{{ r.ingredient.name if r.ingredient else r.ingredient_id }}</td><td>{{ r.qty_per_unit }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<p class="muted">No recipe yet.</p>{% endif %}
+</div>
+{% endfor %}
+{% endblock %}
