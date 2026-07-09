@@ -6,7 +6,7 @@ from openpyxl.utils import get_column_letter
 
 from . import config
 from .inventory import snapshot
-from .models import Product, Purchase, Sale, Supplier
+from .models import Expense, Product, Purchase, Sale, Supplier
 
 HEADER_FILL = PatternFill("solid", fgColor="1F2937")
 HEADER_FONT = Font(color="FFFFFF", bold=True)
@@ -86,12 +86,18 @@ def build_workbook(db):
     _autosize(ws)
 
     ws = _sheet(wb, "Customer Sales Log", [
-        "Order Date", "Product Name", "Quantity", "Price per Unit", "Gross Sales",
+        "Order Date", "Product Name", "Payment Method", "Quantity", "Price per Unit", "Gross Sales",
     ])
     for s in db.query(Sale).order_by(Sale.sale_date).all():
-        ws.append([s.sale_date, s.product.name if s.product else "", s.qty, s.unit_price,
+        ws.append([s.sale_date, s.product.name if s.product else "", s.payment_method, s.qty, s.unit_price,
                    round((s.qty or 0) * (s.unit_price or 0), 2)])
-    _money_columns(ws, "D", "E")
+    _money_columns(ws, "E", "F")
+    _autosize(ws)
+
+    ws = _sheet(wb, "Operating Expenses Log", ["Date", "Category", "Description", "Amount", "Notes"])
+    for e in db.query(Expense).order_by(Expense.expense_date).all():
+        ws.append([e.expense_date, e.category, e.description, e.amount, e.notes])
+    _money_columns(ws, "D")
     _autosize(ws)
 
     return wb

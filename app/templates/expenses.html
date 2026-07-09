@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head"><h1>Operating expenses</h1></div>
+<p class="lede">Rent, salaries, utilities and other costs that aren't tied to a specific ingredient - used to calculate net profit on the dashboard.</p>
+
+<div class="grid2">
+  <div class="card">
+    <h2>Add expense</h2>
+    <form method="post" action="/expenses">
+      <label>Category
+        <select name="category">
+          {% for c in categories %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Description <input name="description" placeholder="e.g. July rent"></label>
+      <label>Amount <input type="number" step="any" name="amount" value="0" required></label>
+      <label>Date <input type="date" name="expense_date"></label>
+      <label>Notes <input name="notes"></label>
+      <button type="submit">Add expense</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Total by category</h2>
+    {% if by_category %}
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>Category</th><th class="num">Total</th></tr></thead>
+      <tbody>
+        {% for cat, amt in by_category.items() %}
+        <tr><td>{{ cat }}</td><td class="num">{{ currency }}{{ "%.2f"|format(amt) }}</td></tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr><td><strong>Total</strong></td><td class="num"><strong>{{ currency }}{{ "%.2f"|format(total) }}</strong></td></tr>
+      </tfoot>
+    </table>
+    </div>
+    {% else %}<p class="muted">No expenses logged yet.</p>{% endif %}
+  </div>
+</div>
+
+<h2>All expenses</h2>
+{% if expenses %}
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Date</th><th>Category</th><th>Description</th><th class="num">Amount</th><th>Notes</th><th></th></tr></thead>
+  <tbody>
+    {% for e in expenses %}
+    <tr>
+      <td>{{ e.expense_date }}</td>
+      <td>{{ e.category }}</td>
+      <td>{{ e.description or "-" }}</td>
+      <td class="num">{{ currency }}{{ "%.2f"|format(e.amount) }}</td>
+      <td>{{ e.notes or "-" }}</td>
+      <td><form method="post" action="/expenses/{{ e.id }}/delete"><button class="small ghost">Delete</button></form></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}<p class="muted">Nothing logged yet.</p>{% endif %}
+{% endblock %}

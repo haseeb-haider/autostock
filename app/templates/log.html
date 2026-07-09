@@ -14,6 +14,15 @@
       </label>
       <label>Quantity <input type="number" step="any" name="qty" required></label>
       <label>Unit price <input type="number" step="any" name="unit_price" value="0"></label>
+      <label>Payment method
+        <select name="payment_method">
+          <option value="">-</option>
+          <option value="Cash">Cash</option>
+          <option value="GCash">GCash</option>
+          <option value="Paymaya">Paymaya</option>
+          <option value="Credit/Debit Card">Credit/Debit Card</option>
+        </select>
+      </label>
       <label>Date <input type="date" name="sale_date"></label>
       <button type="submit">Record sale</button>
     </form>

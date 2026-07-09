@@ -8,14 +8,15 @@ from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse,
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from . import config
+from .analytics import monthly_profit_loss, payment_method_breakdown, stock_status_breakdown
 from .automation import build_reorder_plan, run_daily
 from .database import get_db, init_db
 from .export import build_workbook
 from .inventory import kpis, snapshot
-from .models import Ingredient, Product, Purchase, RecipeItem, Sale, Supplier
+from .models import Expense, Ingredient, Product, Purchase, RecipeItem, Sale, Supplier
 from .scheduler import start_scheduler
 
 app = FastAPI(title="AutoStock")
@@ -54,7 +55,7 @@ def health():
 
 # --- Dashboard ------------------------------------------------------------
 @app.get("/", response_class=HTMLResponse)
-def dashboard(request: Request, db: Session = Depends(get_db), _=Depends(guard)):
+def dashboard(request: Request, year: int = None, db: Session = Depends(get_db), _=Depends(guard)):
     rows = snapshot(db)
     plan = build_reorder_plan(db)
     suggestions = []
@@ -62,18 +63,33 @@ def dashboard(request: Request, db: Session = Depends(get_db), _=Depends(guard))
         for ln in entry["lines"]:
             suggestions.append({**ln, "supplier": entry["supplier"].name
                                 if entry["supplier"] else "-"})
+
+    low_stock_rows = [r for r in rows if r["status"] == "reorder"]
+    out_of_stock_rows = [r for r in rows if r["status"] == "out"]
+    year = year or date.today().year
+    pl = monthly_profit_loss(db, year)
+    stock_breakdown = stock_status_breakdown(rows)
+    payment_breakdown = payment_method_breakdown(db)
+
     return templates.TemplateResponse("dashboard.html", {
         "request": request, "rows": rows, "kpis": kpis(rows),
         "suggestions": suggestions, "business": config.BUSINESS_NAME,
+        "low_stock_rows": low_stock_rows, "out_of_stock_rows": out_of_stock_rows,
+        "pl": pl, "year": year, "stock_breakdown": stock_breakdown,
+        "payment_breakdown": payment_breakdown,
     })
 
 
 # --- Ingredients ----------------------------------------------------------
 @app.get("/ingredients", response_class=HTMLResponse)
 def ingredients_page(request: Request, db: Session = Depends(get_db), _=Depends(guard)):
+    ingredients = (
+        db.query(Ingredient).options(joinedload(Ingredient.supplier))
+        .order_by(Ingredient.name).all()
+    )
     return templates.TemplateResponse("ingredients.html", {
-        "request": request, "ingredients": db.query(Ingredient).all(),
-        "suppliers": db.query(Supplier).all(), "business": config.BUSINESS_NAME,
+        "request": request, "ingredients": ingredients,
+        "suppliers": db.query(Supplier).order_by(Supplier.name).all(), "business": config.BUSINESS_NAME,
     })
 
 
@@ -110,9 +126,15 @@ def add_supplier(name: str = Form(...), email: str = Form(""),
 # --- Products & recipes ---------------------------------------------------
 @app.get("/products", response_class=HTMLResponse)
 def products_page(request: Request, db: Session = Depends(get_db), _=Depends(guard)):
+    products = (
+        db.query(Product)
+        .options(selectinload(Product.recipe_items).joinedload(RecipeItem.ingredient))
+        .order_by(Product.name)
+        .all()
+    )
     return templates.TemplateResponse("products.html", {
-        "request": request, "products": db.query(Product).all(),
-        "ingredients": db.query(Ingredient).all(), "business": config.BUSINESS_NAME,
+        "request": request, "products": products,
+        "ingredients": db.query(Ingredient).order_by(Ingredient.name).all(), "business": config.BUSINESS_NAME,
     })
 
 
@@ -137,11 +159,15 @@ def add_recipe_item(product_id: int = Form(...), ingredient_id: int = Form(...),
 # --- Quick entry: sales & purchases --------------------------------------
 @app.get("/log", response_class=HTMLResponse)
 def log_page(request: Request, db: Session = Depends(get_db), _=Depends(guard)):
+    pending = (
+        db.query(Purchase).options(joinedload(Purchase.ingredient))
+        .filter(Purchase.status == "ordered").order_by(Purchase.order_date).all()
+    )
     return templates.TemplateResponse("log.html", {
-        "request": request, "products": db.query(Product).all(),
-        "ingredients": db.query(Ingredient).all(),
-        "suppliers": db.query(Supplier).all(),
-        "pending": db.query(Purchase).filter(Purchase.status == "ordered").all(),
+        "request": request, "products": db.query(Product).order_by(Product.name).all(),
+        "ingredients": db.query(Ingredient).order_by(Ingredient.name).all(),
+        "suppliers": db.query(Supplier).order_by(Supplier.name).all(),
+        "pending": pending,
         "business": config.BUSINESS_NAME,
     })
 
@@ -149,9 +175,11 @@ def log_page(request: Request, db: Session = Depends(get_db), _=Depends(guard)):
 @app.post("/sales")
 def add_sale(product_id: int = Form(...), qty: float = Form(...),
              unit_price: float = Form(0.0), sale_date: str = Form(""),
+             payment_method: str = Form(""),
              db: Session = Depends(get_db), _=Depends(guard)):
     d = date.fromisoformat(sale_date) if sale_date else date.today()
-    db.add(Sale(product_id=product_id, qty=qty, unit_price=unit_price, sale_date=d))
+    db.add(Sale(product_id=product_id, qty=qty, unit_price=unit_price,
+                payment_method=payment_method, sale_date=d))
     db.commit()
     return RedirectResponse("/log", status_code=303)
 
@@ -176,6 +204,45 @@ def mark_delivered(purchase_id: int, db: Session = Depends(get_db), _=Depends(gu
         p.delivered_date = date.today()
         db.commit()
     return RedirectResponse("/log", status_code=303)
+
+
+# --- Expenses ---------------------------------------------------------------
+EXPENSE_CATEGORIES = ["Salaries", "Utilities", "Rent", "Maintenance", "Supplies", "Other"]
+
+
+@app.get("/expenses", response_class=HTMLResponse)
+def expenses_page(request: Request, db: Session = Depends(get_db), _=Depends(guard)):
+    expenses = db.query(Expense).order_by(Expense.expense_date.desc()).all()
+    total = round(sum(e.amount or 0.0 for e in expenses), 2)
+    by_category = {}
+    for e in expenses:
+        by_category[e.category] = round(by_category.get(e.category, 0.0) + (e.amount or 0.0), 2)
+    return templates.TemplateResponse("expenses.html", {
+        "request": request, "expenses": expenses, "total": total,
+        "by_category": by_category, "categories": EXPENSE_CATEGORIES,
+        "business": config.BUSINESS_NAME,
+    })
+
+
+@app.post("/expenses")
+def add_expense(category: str = Form("Other"), description: str = Form(""),
+                 amount: float = Form(0.0), expense_date: str = Form(""),
+                 notes: str = Form(""),
+                 db: Session = Depends(get_db), _=Depends(guard)):
+    d = date.fromisoformat(expense_date) if expense_date else date.today()
+    db.add(Expense(category=category, description=description, amount=amount,
+                   expense_date=d, notes=notes))
+    db.commit()
+    return RedirectResponse("/expenses", status_code=303)
+
+
+@app.post("/expenses/{expense_id}/delete")
+def delete_expense(expense_id: int, db: Session = Depends(get_db), _=Depends(guard)):
+    e = db.get(Expense, expense_id)
+    if e:
+        db.delete(e)
+        db.commit()
+    return RedirectResponse("/expenses", status_code=303)
 
 
 # --- Export -----------------------------------------------------------------

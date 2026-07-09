@@ -77,7 +77,19 @@ class Sale(Base):
     product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
     qty = Column(Float, default=0.0)
     unit_price = Column(Float, default=0.0)
+    payment_method = Column(String, default="")
     sale_date = Column(Date, default=date.today)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     product = relationship("Product", back_populates="sales")
+
+
+class Expense(Base):
+    """Operating expenses (rent, salaries, utilities...) - not tied to any ingredient."""
+    __tablename__ = "expenses"
+    id = Column(Integer, primary_key=True)
+    expense_date = Column(Date, default=date.today)
+    category = Column(String, default="Other")
+    description = Column(String, default="")
+    amount = Column(Float, default=0.0)
+    notes = Column(String, default="")

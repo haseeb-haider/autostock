@@ -1,4 +1,9 @@
 {% extends "base.html" %}
+
+{% block head_extra %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+{% endblock %}
+
 {% block content %}
 <div class="page-head">
   <h1>Dashboard</h1>
@@ -23,43 +28,90 @@
     </div>
     <span class="kpi-num">{{ currency }}{{ "%.2f"|format(kpis.total_value) }}</span>
   </div>
-  <div class="kpi warn">
-    <div class="kpi-top">
-      <span class="kpi-label">Need reorder</span>
-      <span class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg></span>
+  <a class="kpi warn clickable" href="#modal-low-stock">
+    <div style="flex:1">
+      <div class="kpi-top">
+        <span class="kpi-label">Low stock</span>
+        <span class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg></span>
+      </div>
+      <span class="kpi-num">{{ stock_breakdown["Low Stock"] }}</span>
+      <div class="kpi-hint">Click to view list</div>
     </div>
-    <span class="kpi-num">{{ kpis.reorder_count }}</span>
-  </div>
-  <div class="kpi danger">
-    <div class="kpi-top">
-      <span class="kpi-label">Out of stock</span>
-      <span class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6m0-6l6 6"/></svg></span>
+  </a>
+  <a class="kpi danger clickable" href="#modal-out-stock">
+    <div style="flex:1">
+      <div class="kpi-top">
+        <span class="kpi-label">Out of stock</span>
+        <span class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6m0-6l6 6"/></svg></span>
+      </div>
+      <span class="kpi-num">{{ stock_breakdown["No Stock"] }}</span>
+      <div class="kpi-hint">Click to view list</div>
     </div>
-    <span class="kpi-num">{{ kpis.out_count }}</span>
-  </div>
+  </a>
+  <a class="kpi clickable" href="#modal-suggested">
+    <div style="flex:1">
+      <div class="kpi-top">
+        <span class="kpi-label">Suggested orders</span>
+        <span class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7L12 3 4 7m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></span>
+      </div>
+      <span class="kpi-num">{{ suggestions|length }}</span>
+      <div class="kpi-hint">Click to view list</div>
+    </div>
+  </a>
 </section>
 
-{% if suggestions %}
-<h2>Suggested purchase orders</h2>
-<div class="table-wrap">
-<table>
-  <thead><tr><th>Ingredient</th><th>Supplier</th><th>Order qty</th><th class="num">Unit cost</th><th class="num">Line cost</th></tr></thead>
-  <tbody>
-    {% for s in suggestions %}
-    <tr>
-      <td>{{ s.name }}</td><td>{{ s.supplier }}</td>
-      <td>{{ s.qty }} {{ s.unit }}</td>
-      <td class="num">{{ currency }}{{ "%.2f"|format(s.unit_cost) }}</td>
-      <td class="num">{{ currency }}{{ "%.2f"|format(s.line_cost) }}</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+<!-- Financial overview -->
+<div class="section-head">
+  <h2>Financial overview &middot; {{ year }}</h2>
+  <a href="/expenses" class="muted" style="text-decoration:none;">Manage expenses &rarr;</a>
 </div>
-{% else %}
-<h2>Suggested purchase orders</h2>
-<p class="muted">No reorders needed right now.</p>
+<div class="finance-grid">
+  <div class="finance-card">
+    <div class="finance-label">Total sales</div>
+    <div class="finance-num">{{ currency }}{{ "%.2f"|format(pl.totals.revenue) }}</div>
+  </div>
+  <div class="finance-card">
+    <div class="finance-label">Cost of goods sold</div>
+    <div class="finance-num">{{ currency }}{{ "%.2f"|format(pl.totals.cogs) }}</div>
+  </div>
+  <div class="finance-card">
+    <div class="finance-label">Gross profit</div>
+    <div class="finance-num {{ 'pos' if pl.totals.gross_profit >= 0 else 'neg' }}">{{ currency }}{{ "%.2f"|format(pl.totals.gross_profit) }}</div>
+  </div>
+  <div class="finance-card">
+    <div class="finance-label">Operating expenses</div>
+    <div class="finance-num">{{ currency }}{{ "%.2f"|format(pl.totals.expenses) }}</div>
+  </div>
+  <div class="finance-card">
+    <div class="finance-label">Net profit &middot; NPM {{ pl.totals.npm }}%</div>
+    <div class="finance-num {{ 'pos' if pl.totals.net_profit >= 0 else 'neg' }}">{{ currency }}{{ "%.2f"|format(pl.totals.net_profit) }}</div>
+  </div>
+</div>
+
+{% if not pl.totals.cogs and pl.totals.revenue %}
+<p class="muted" style="margin-top:10px;">Cost of goods sold shows {{ currency }}0.00 because none of your products have a recipe (bill of materials) yet. Add ingredient quantities per product on the <a href="/products">Products &amp; recipes</a> page for accurate profit numbers.</p>
 {% endif %}
+
+<!-- Charts -->
+<div class="section-head"><h2>Charts</h2></div>
+<div class="charts-grid">
+  <div class="chart-card wide">
+    <h3>Monthly sales &middot; {{ year }}</h3>
+    <div class="chart-canvas-wrap"><canvas id="chart-monthly-sales"></canvas></div>
+  </div>
+  <div class="chart-card wide">
+    <h3>Profit &amp; loss by month &middot; {{ year }}</h3>
+    <div class="chart-canvas-wrap"><canvas id="chart-pl"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <h3>Stock status</h3>
+    <div class="chart-canvas-wrap short"><canvas id="chart-stock-status"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <h3>Sales by payment method</h3>
+    <div class="chart-canvas-wrap short"><canvas id="chart-payment"></canvas></div>
+  </div>
+</div>
 
 <h2>Live stock</h2>
 <div class="table-wrap">
@@ -84,4 +136,131 @@
   </tbody>
 </table>
 </div>
+
+<!-- Modal: Low stock -->
+<div class="modal-overlay" id="modal-low-stock">
+  <div class="modal-box">
+    <div class="modal-head"><h3>Low stock ({{ low_stock_rows|length }})</h3><a href="#" class="modal-close">&times;</a></div>
+    <div class="modal-body">
+      <p class="lede">Ingredients at or below their reorder point, but not yet at zero.</p>
+      {% if low_stock_rows %}
+      <div class="table-wrap">
+      <table>
+        <thead><tr><th>Ingredient</th><th class="num">Stock</th><th class="num">Reorder at</th><th class="num">Days left</th></tr></thead>
+        <tbody>
+          {% for r in low_stock_rows %}
+          <tr><td>{{ r.name }}</td><td class="num">{{ r.stock }} {{ r.unit }}</td><td class="num">{{ r.reorder_point }}</td><td class="num">{{ r.days_left if r.days_left is not none else "-" }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
+      {% else %}<p class="muted">Nothing is low on stock.</p>{% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Out of stock -->
+<div class="modal-overlay" id="modal-out-stock">
+  <div class="modal-box">
+    <div class="modal-head"><h3>Out of stock ({{ out_of_stock_rows|length }})</h3><a href="#" class="modal-close">&times;</a></div>
+    <div class="modal-body">
+      <p class="lede">Ingredients with zero stock remaining.</p>
+      {% if out_of_stock_rows %}
+      <div class="table-wrap">
+      <table>
+        <thead><tr><th>Ingredient</th><th>Supplier</th><th class="num">Reorder at</th></tr></thead>
+        <tbody>
+          {% for r in out_of_stock_rows %}
+          <tr><td>{{ r.name }}</td><td>{{ r.supplier }}</td><td class="num">{{ r.reorder_point }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
+      {% else %}<p class="muted">Nothing is out of stock.</p>{% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Suggested orders -->
+<div class="modal-overlay" id="modal-suggested">
+  <div class="modal-box">
+    <div class="modal-head"><h3>Suggested purchase orders ({{ suggestions|length }})</h3><a href="#" class="modal-close">&times;</a></div>
+    <div class="modal-body">
+      <p class="lede">For each ingredient below its reorder point, this is how much to order to cover the supplier's lead time plus a safety buffer - grouped by supplier so you can place one order per supplier.</p>
+      {% if suggestions %}
+      <div class="table-wrap">
+      <table>
+        <thead><tr><th>Ingredient</th><th>Supplier</th><th class="num">Order qty</th><th class="num">Unit cost</th><th class="num">Line cost</th></tr></thead>
+        <tbody>
+          {% for s in suggestions %}
+          <tr>
+            <td>{{ s.name }}</td><td>{{ s.supplier }}</td>
+            <td class="num">{{ s.qty }} {{ s.unit }}</td>
+            <td class="num">{{ currency }}{{ "%.2f"|format(s.unit_cost) }}</td>
+            <td class="num">{{ currency }}{{ "%.2f"|format(s.line_cost) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
+      {% else %}<p class="muted">Nothing to order right now.</p>{% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const CH_INK = "#161f2e", CH_MUTED = "#6b7684";
+Chart.defaults.font.family = "Inter, sans-serif";
+Chart.defaults.color = CH_MUTED;
+
+new Chart(document.getElementById("chart-monthly-sales"), {
+  type: "bar",
+  data: {
+    labels: {{ pl.months|tojson }},
+    datasets: [{ label: "Sales", data: {{ pl.revenue|tojson }}, backgroundColor: "#3457e5", borderRadius: 4 }],
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: { y: { beginAtZero: true, grid: { color: "#f0f1f5" } }, x: { grid: { display: false } } },
+  },
+});
+
+new Chart(document.getElementById("chart-pl"), {
+  type: "line",
+  data: {
+    labels: {{ pl.months|tojson }},
+    datasets: [
+      { label: "Revenue", data: {{ pl.revenue|tojson }}, borderColor: "#3457e5", backgroundColor: "#3457e5", tension: .3 },
+      { label: "Gross profit", data: {{ pl.gross_profit|tojson }}, borderColor: "#1a9d63", backgroundColor: "#1a9d63", tension: .3 },
+      { label: "Net profit", data: {{ pl.net_profit|tojson }}, borderColor: "#d0402c", backgroundColor: "#d0402c", tension: .3 },
+    ],
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: "bottom" } },
+    scales: { y: { grid: { color: "#f0f1f5" } }, x: { grid: { display: false } } },
+  },
+});
+
+new Chart(document.getElementById("chart-stock-status"), {
+  type: "pie",
+  data: {
+    labels: {{ stock_breakdown.keys()|list|tojson }},
+    datasets: [{ data: {{ stock_breakdown.values()|list|tojson }}, backgroundColor: ["#1a9d63", "#b4780a", "#d0402c"] }],
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom" } } },
+});
+
+new Chart(document.getElementById("chart-payment"), {
+  type: "pie",
+  data: {
+    labels: {{ payment_breakdown.keys()|list|tojson }},
+    datasets: [{ data: {{ payment_breakdown.values()|list|tojson }}, backgroundColor: ["#3457e5", "#7c5cf7", "#1a9d63", "#b4780a", "#d0402c", "#98a2b3"] }],
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom" } } },
+});
+</script>
 {% endblock %}
